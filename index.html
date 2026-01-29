@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra Stream Pro | External Player Support</title>
+    <!-- Modern Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- HLS Support for streaming links -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <style>
+        :root {
+            --primary: #00ff88;
+            --dark-bg: #121212;
+            --card-bg: #1e1e2e;
+            --text-color: #e0e0e0;
+            --vlc-color: #ff5722;
+            --mx-color: #2196f3;
+            --playit-color: #9c27b0;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            background: linear-gradient(45deg, #00ff88, #00b8d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Input Area */
+        .input-group {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #2a2a35;
+            color: #fff;
+            outline: none;
+            font-size: 16px;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        .play-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 0 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+        }
+
+        /* Video Player */
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* External Players Section */
+        .external-players {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            display: none; /* Hidden initially */
+            animation: slideUp 0.5s ease;
+        }
+
+        .external-players.active {
+            display: block;
+        }
+
+        .ep-title {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .ext-btn {
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            transition: transform 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .ext-btn:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.2);
+        }
+
+        /* Player Specific Colors */
+        .btn-vlc { background: linear-gradient(135deg, #e65100, var(--vlc-color)); }
+        .btn-mx { background: linear-gradient(135deg, #1565c0, var(--mx-color)); }
+        .btn-playit { background: linear-gradient(135deg, #6a1b9a, var(--playit-color)); }
+        .btn-km { background: linear-gradient(135deg, #333, #555); }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            .input-group { flex-direction: column; }
+            .play-btn { padding: 12px; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="header">
+            <h1><i class="fa-solid fa-play-circle"></i> ProStream</h1>
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-group">
+            <input type="text" id="streamUrl" placeholder="Paste video URL (MP4, M3U8, MKV)...">
+            <button class="play-btn" onclick="loadVideo()">
+                <i class="fa-solid fa-bolt"></i> PLAY
+            </button>
+        </div>
+
+        <!-- HTML5 Video Player -->
+        <div class="video-wrapper">
+            <video id="videoPlayer" controls playsinline poster="https://via.placeholder.com/1280x720/000000/00ff88?text=ProStream+Player">
+            </video>
+        </div>
+
+        <!-- External Players Links -->
+        <div class="external-players" id="externalLinks">
+            <div class="ep-title">Open in External App</div>
+            <div class="player-grid">
+                
+                <!-- VLC Player -->
+                <a href="#" id="linkVLC" class="ext-btn btn-vlc">
+                    <i class="fa-solid fa-cone"></i> VLC Player
+                </a>
+
+                <!-- MX Player (Android) -->
+                <a href="#" id="linkMX" class="ext-btn btn-mx">
+                    <i class="fa-solid fa-play"></i> MX Player
+                </a>
+
+                <!-- PlayIt -->
+                <a href="#" id="linkPlayit" class="ext-btn btn-playit">
+                    <i class="fa-solid fa-circle-play"></i> PlayIt
+                </a>
+
+                <!-- KM Player / Generic -->
+                <a href="#" id="linkKM" class="ext-btn btn-km">
+                    <i class="fa-solid fa-video"></i> KM Player
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        var video = document.getElementById('videoPlayer');
+        var streamInput = document.getElementById('streamUrl');
+        var externalSection = document.getElementById('externalLinks');
+
+        function loadVideo() {
+            var url = streamInput.value.trim();
+
+            if (!url) {
+                alert("Please enter a valid URL!");
+                return;
+            }
+
+            // 1. Play in Browser (Support for HLS .m3u8)
+            if (Hls.isSupported() && url.includes('.m3u8')) {
+                var hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play();
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // For Safari
+                video.src = url;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
+                });
+            } else {
+                // Standard MP4/WebM
+                video.src = url;
+                video.play();
+            }
+
+            // 2. Generate Deep Links for External Apps
+            generateExternalLinks(url);
+
+            // 3. Show the External Player Section
+            externalSection.classList.add('active');
+            
+            // Scroll to video
+            video.scrollIntoView({behavior: "smooth", block: "center"});
+        }
+
+        function generateExternalLinks(url) {
+            // VLC Protocol: vlc://<url>
+            document.getElementById('linkVLC').href = "vlc://" + url;
+
+            // MX Player Intent (Android specific)
+            // Format: intent:<url>#Intent;package=com.mxtech.videoplayer.ad;end
+            var mxIntent = "intent:" + url + "#Intent;package=com.mxtech.videoplayer.ad;S.title=ProStreamVideo;end";
+            document.getElementById('linkMX').href = mxIntent;
+
+            // PlayIt Protocol: playit://<url> (Often works with raw intent too, but trying standard)
+            // PlayIt usually uses intent on Android as well
+            var playitIntent = "intent:" + url + "#Intent;package=com.playit.videoplayer;end";
+            document.getElementById('linkPlayit').href = playitIntent;
+
+            // KMPlayer / General Intent (fallback)
+            var kmIntent = "intent:" + url + "#Intent;type=video/*;end";
+            document.getElementById('linkKM').href = kmIntent;
+        }
+
+        // Allow 'Enter' key to trigger play
+        streamInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                loadVideo();
+            }
+        });
+
+    </script>
+</body>
+</html>
