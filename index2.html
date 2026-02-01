@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProStream | Ultimate Player</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+    <style>
+        :root {
+            --bg-body: #0a0a12;
+            --bg-panel: #16161e;
+            --primary: #00e5ff; 
+            --text-main: #ffffff;
+            --text-muted: #8899a6;
+            --border: 1px solid rgba(255,255,255,0.1);
+            --input-bg: #000000;
+            --plyr-color-main: #00e5ff;
+        }
+
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 20px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: var(--border); }
+        .logo { font-size: 22px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+
+        .input-area { display: flex; gap: 10px; position: relative; }
+        .input-wrapper { position: relative; flex-grow: 1; }
+        input[type="text"] {
+            width: 100%; padding: 16px 45px; border-radius: 12px; border: var(--border);
+            background: var(--input-bg); color: var(--text-main); font-size: 16px; outline: none;
+        }
+
+        .video-box {
+            background: #000;
+            border-radius: 16px;
+            overflow: visible !important; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            border: var(--border);
+            position: relative;
+            z-index: 100;
+        }
+
+        .plyr--full-ui { overflow: visible !important; }
+
+        /* --- 1. கண்ட்ரோல்ஸ் மறையும்போது கீழே நழுவாமல் இருக்க (Animation Fix) --- */
+        .plyr--hide-controls .plyr__controls {
+            transform: translateY(0) !important; /* கீழே நகர்வதைத் தடுக்கும் */
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- 2. ஸ்பீடு மெனு லேஅவுட் --- */
+        .plyr__menu__container {
+            position: absolute !important;
+            top: 100% !important; 
+            bottom: auto !important;
+            margin-top: 10px;
+            z-index: 9999 !important;
+            background: var(--bg-panel) !important;
+            border: 1px solid var(--primary) !important;
+            border-radius: 12px;
+        }
+
+        :fullscreen .plyr__menu__container,
+        :-webkit-full-screen .plyr__menu__container,
+        .plyr--fullscreen-fallback .plyr__menu__container {
+            top: auto !important;
+            bottom: 60px !important; 
+            right: 10px !important;
+            margin-top: 0;
+        }
+
+        .plyr__menu__container::after { display: none !important; }
+
+        .btn-load { padding: 0 30px; background: var(--primary); color: #000; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .apps-panel { background: var(--bg-panel); padding: 20px; border-radius: 16px; border: var(--border); display: none; margin-top: 40px; }
+        .apps-panel.active { display: block; }
+        .grid-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        .app-btn { text-decoration: none; padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; font-weight: 600; }
+        .vlc { background: linear-gradient(135deg, #ff9800, #ff5722); }
+        .mx { background: linear-gradient(135deg, #2196f3, #0288d1); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo"><i class="fa-solid fa-play-circle"></i> PRO STREAM</div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <i class="fa-solid fa-link" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
+                <input type="text" id="urlInput" placeholder="Paste Video Link here...">
+            </div>
+            <button class="btn-load" onclick="playStream()">PLAY</button>
+        </div>
+
+        <div class="video-box">
+            <video id="videoPlayer" playsinline controls></video>
+        </div>
+
+        <div class="apps-panel" id="appsPanel">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">OPEN IN EXTERNAL APP</div>
+            <div class="grid-btns">
+                <a href="#" id="vlcLink" class="app-btn vlc"><i class="fa-solid fa-video"></i> VLC</a>
+                <a href="#" id="mxLink" class="app-btn mx"><i class="fa-solid fa-play"></i> MX Player</a>
+                <a href="#" id="playitLink" class="app-btn vlc" style="background:#9c27b0;">PlayIt</a>
+                <a href="#" id="sysLink" class="app-btn vlc" style="background:#607d8b;">System</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    <script>
+        const video = document.getElementById('videoPlayer');
+        const player = new Plyr('#videoPlayer', {
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
+            settings: ['quality', 'speed'],
+            speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+            hideControls: true, // தானாக மறையும்
+            clickToPlay: true,
+            displayDuration: true
+        });
+
+        function playStream() {
+            let url = document.getElementById('urlInput').value.trim();
+            if(!url) return;
+
+            if (Hls.isSupported() && url.includes('.m3u8')) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else {
+                video.src = url;
+                video.play();
+            }
+            document.getElementById('appsPanel').classList.add('active');
+            generateLinks(url);
+        }
+
+        function generateLinks(url) {
+            document.getElementById('vlcLink').href = `intent:${url}#Intent;package=org.videolan.vlc;type=video/*;end`;
+            document.getElementById('mxLink').href = `intent:${url}#Intent;package=com.mxtech.videoplayer.ad;type=video/*;end`;
+            document.getElementById('playitLink').href = `intent:${url}#Intent;package=com.playit.videoplayer;type=video/*;end`;
+            document.getElementById('sysLink').href = `intent:${url}#Intent;type=video/*;end`;
+        }
+    </script>
+</body>
+</html>
+
+
+
